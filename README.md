@@ -1,50 +1,137 @@
-# Welcome to your Expo app 👋
+# Movie App - Expo SDK 53 + NativeWind
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A movie application built with Expo SDK 53 and NativeWind that consumes the TMDB API, featuring animated carousels and trailer playback functionality.
 
-## Get started
+## 📦 Setup Instructions
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
+### Installing Dependencies
 ```bash
-npm run reset-project
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### Running the App
 
-## Learn more
+**iOS:**
+```bash
+npx expo start --ios
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+**Android:**
+```bash
+npx expo start --android
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+**Development Server:**
+```bash
+npx expo start
+```
 
-## Join the community
+### Environment Variables Configuration
 
-Join our community of developers creating universal apps.
+1. Get your TMDB API key from [TMDB API Settings](https://www.themoviedb.org/settings/api)
+2. Create/update `.env` file in the root directory:
+```env
+EXPO_PUBLIC_API_KEY_TMDB=your_api_key_here
+```
+3. The app will automatically use this environment variable
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## 🚀 Implemented Features
+
+- ✅ **Popular and Upcoming Movies List** with horizontal scrolling
+- ✅ **Detailed Movie View** with comprehensive information
+- ✅ **Local Movie Saving** with offline persistence using AsyncStorage
+- ✅ **Tab Navigation** between "Movies" and "Saved" screens
+- ✅ **Animated Movie Carousel** with fade transitions
+- ✅ **Trailer Playback** integration with YouTube
+- ✅ **Responsive Design** using NativeWind/Tailwind CSS
+- ✅ **Error Handling** with user-friendly messages
+- ✅ **Pull-to-Refresh** functionality
+
+## 🧭 Navigation Structure
+
+### Architecture
+- **Expo Router** with file-based routing system
+- **Tab Navigator** for main navigation (Movies/Saved)
+- **Stack Navigator** for detailed views
+
+### Navigation Flow
+```
+├── (tabs)/                 # Tab Navigator
+│   ├── index.tsx          # Movies Screen (Popular & Upcoming)
+│   └── saved.tsx          # Saved Movies Screen
+└── movie/[id].tsx         # Movie Details Screen (Stack)
+```
+
+### Navigation Patterns
+- **Tab Navigation**: Bottom tabs for primary screens
+- **Stack Navigation**: Push/pop for detail views
+- **Deep Linking**: Dynamic routes for movie details
+- **Programmatic Navigation**: Using `expo-router` for seamless transitions
+
+## 🏗️ Architecture & Technology Decisions
+
+### Core Technologies
+- **Expo SDK 53**: Latest stable version for cross-platform development
+- **NativeWind**: Tailwind CSS for React Native styling
+- **TypeScript**: Type safety and better developer experience
+- **Expo Router**: File-based routing system
+
+### State Management
+- **React Hooks**: useState, useEffect for local component state
+- **No Global State**: Simple app doesn't require Redux/Zustand
+- **AsyncStorage**: Persistent local storage for saved movies
+
+### API & Data Layer
+- **TMDB API**: RESTful API consumption
+- **Custom API Service**: Centralized HTTP client with error handling
+- **Parallel Requests**: Promise.all for optimized loading
+- **Image Optimization**: expo-image for better performance
+
+### UI/UX Decisions
+- **NativeWind**: Utility-first CSS framework for consistent styling
+- **Responsive Design**: Adaptive layouts for different screen sizes
+- **Native Components**: Platform-specific UI elements
+- **Smooth Animations**: React Native Animated API for carousel transitions
+
+## ⚠️ Error Handling
+
+### Network Error Management
+- **Custom APIError Class**: Structured error handling
+- **HTTP Status Codes**: Proper TMDB API error code handling
+- **Timeout Handling**: 10-second request timeout
+- **User-Friendly Messages**: Translated error messages for users
+
+### Edge Cases
+- **Empty States**: Graceful handling of no data scenarios
+- **Loading States**: Visual feedback during API calls
+- **Offline Support**: Cached data for saved movies
+- **Invalid Data**: Fallback values and error boundaries
+
+### TMDB API Error Codes
+- **Code 7**: Invalid API key configuration
+- **Code 6**: Invalid movie ID
+- **Network Errors**: Connection and timeout handling
+
+## Project Structure
+
+```
+app/
+├── (tabs)/
+│   ├── _layout.tsx        # Tab navigator configuration
+│   ├── index.tsx          # Movies screen (Popular & Upcoming)
+│   └── saved.tsx          # Saved movies screen
+├── movie/[id].tsx         # Dynamic movie details screen
+└── _layout.tsx            # Root layout with stack navigator
+
+components/
+├── MovieCard.tsx          # Reusable movie card component
+└── MovieCarousel.tsx      # Animated carousel component
+
+services/
+├── tmdb.ts               # TMDB API service with error handling
+└── storage.ts            # AsyncStorage service for persistence
+
+types/
+├── movie.ts              # Movie and video type definitions
+└── errors.ts             # Error handling types
+```

@@ -1,75 +1,103 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import MovieCard from '@/components/MovieCard';
+import MovieCarousel from '@/components/MovieCarousel';
+import { tmdbApi } from '@/services/tmdb';
+import { APIError } from '@/types/errors';
+import { Movie } from '@/types/movie';
+import { useEffect, useState } from 'react';
+import { Alert, FlatList, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+export default function MoviesScreen() {
+  const [popularMovies, setPopularMovies] = useState<Movie[]>([]);
+  const [upcomingMovies, setUpcomingMovies] = useState<Movie[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-export default function HomeScreen() {
+  const shuffleArray = (array: Movie[]) => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
+  const loadMovies = async () => {
+    try {
+      setError(null);
+      const [popular, upcoming] = await Promise.all([
+        tmdbApi.getPopularMovies(),
+        tmdbApi.getUpcomingMovies()
+      ]);
+      setPopularMovies(shuffleArray(popular));
+      setUpcomingMovies(upcoming);
+    } catch (error) {
+      const errorMessage = error instanceof APIError ? error.message : 'Failed to load movies';
+      setError(errorMessage);
+      if (error instanceof APIError && error.statusCode === 7) {
+        Alert.alert('Configuration Error', errorMessage);
+      }
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    loadMovies();
+  }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadMovies();
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView className="flex-1 justify-center items-center bg-neutral-50">
+        <Text className="text-lg text-neutral-600">Loading movies...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (error && popularMovies.length === 0 && upcomingMovies.length === 0) {
+    return (
+      <SafeAreaView className="flex-1 justify-center items-center bg-neutral-50 px-8">
+        <Text className="text-lg text-accent-600 text-center mb-4">⚠️ Error</Text>
+        <Text className="text-neutral-600 text-center">{error}</Text>
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <SafeAreaView className="flex-1 bg-neutral-50" edges={['bottom']}>
+      <ScrollView
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
+        <MovieCarousel movies={popularMovies} />
+        
+        <View className="p-4">
+          <Text className="text-2xl font-bold text-neutral-900 mb-4">Popular Movies</Text>
+          <FlatList
+            data={popularMovies}
+            renderItem={({ item }) => <MovieCard movie={item} />}
+            keyExtractor={(item) => item.id.toString()}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="mb-6"
+          />
+          
+          <Text className="text-2xl font-bold text-neutral-900 mb-4">Upcoming Movies</Text>
+          <FlatList
+            data={upcomingMovies}
+            renderItem={({ item }) => <MovieCard movie={item} />}
+            keyExtractor={(item) => item.id.toString()}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+          />
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
-});
