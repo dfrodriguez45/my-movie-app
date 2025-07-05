@@ -10,6 +10,62 @@ import { Alert, Linking, ScrollView, Text, TouchableOpacity, View } from 'react-
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 /**
+ * Initializes movie details and saved state on component mount
+ */
+const initializeMovieData = async (
+  movieId: number,
+  setMovie: (movie: MovieDetails | null) => void,
+  setTrailer: (trailer: Video | null) => void,
+  setLoading: (loading: boolean) => void,
+  setIsSaved: (saved: boolean) => void
+) => {
+  await Promise.all([
+    loadMovieDetailsData(movieId, setMovie, setTrailer, setLoading),
+    checkMovieSavedStatus(movieId, setIsSaved)
+  ]);
+};
+
+/**
+ * Loads movie details and trailer information in parallel
+ */
+const loadMovieDetailsData = async (
+  movieId: number,
+  setMovie: (movie: MovieDetails | null) => void,
+  setTrailer: (trailer: Video | null) => void,
+  setLoading: (loading: boolean) => void
+) => {
+  try {
+    const [movieDetails, videos] = await Promise.all([
+      tmdbApi.getMovieDetails(movieId),
+      tmdbApi.getMovieVideos(movieId)
+    ]);
+    setMovie(movieDetails);
+    
+    const youtubeTrailer = videos.results?.find(
+      (video: Video) => video.site === 'YouTube' && video.type === 'Trailer'
+    );
+    setTrailer(youtubeTrailer || null);
+  } catch (error) {
+    const errorMessage = error instanceof APIError ? error.message : 'Failed to load movie details';
+    Alert.alert('Error', errorMessage);
+    console.error('Error loading movie details:', error);
+  } finally {
+    setLoading(false);
+  }
+};
+
+/**
+ * Checks if movie is saved in local storage
+ */
+const checkMovieSavedStatus = async (
+  movieId: number,
+  setIsSaved: (saved: boolean) => void
+) => {
+  const saved = await storageService.isMovieSaved(movieId);
+  setIsSaved(saved);
+};
+
+/**
  * Movie Detail Screen Component
  * Displays comprehensive movie information including trailer playback
  * Handles saving/removing movies from local storage
@@ -22,42 +78,11 @@ export default function MovieDetailScreen() {
   const [trailer, setTrailer] = useState<Video | null>(null);
 
   useEffect(() => {
-    loadMovieDetails();
-    checkIfSaved();
+    const movieId = Number(id);
+    initializeMovieData(movieId, setMovie, setTrailer, setLoading, setIsSaved);
   }, [id]);
 
-  /**
-   * Loads movie details and trailer information in parallel
-   * Optimizes performance by making concurrent API calls
-   */
-  const loadMovieDetails = async () => {
-    try {
-      // Parallel API calls for better performance
-      const [movieDetails, videos] = await Promise.all([
-        tmdbApi.getMovieDetails(Number(id)),
-        tmdbApi.getMovieVideos(Number(id))
-      ]);
-      setMovie(movieDetails);
-      
-      // Find YouTube trailer from available videos
-      const youtubeTrailer = videos.results?.find(
-        (video: Video) => video.site === 'YouTube' && video.type === 'Trailer'
-      );
-      setTrailer(youtubeTrailer || null);
-    } catch (error) {
-      // Handle API errors with user-friendly messages
-      const errorMessage = error instanceof APIError ? error.message : 'Failed to load movie details';
-      Alert.alert('Error', errorMessage);
-      console.error('Error loading movie details:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const checkIfSaved = async () => {
-    const saved = await storageService.isMovieSaved(Number(id));
-    setIsSaved(saved);
-  };
 
   /**
    * Toggles movie save state in local storage

@@ -1,9 +1,9 @@
 import { APIError, ERROR_MESSAGES, TMDBError } from '@/types/errors';
 import { Movie, MovieDetails } from '@/types/movie';
 
-const API_KEY = process.env.EXPO_PUBLIC_API_KEY_TMDB || 'YOUR_API_KEY_HERE';
-const BASE_URL = 'https://api.themoviedb.org/3';
-const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
+const API_KEY = process.env.EXPO_PUBLIC_API_KEY_TMDB;
+const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL;
+const IMAGE_BASE_URL = process.env.EXPO_PUBLIC_IMAGE_BASE_URL;
 
 const handleResponse = async (response: Response) => {
   if (!response.ok) {

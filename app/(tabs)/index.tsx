@@ -7,6 +7,52 @@ import { useEffect, useState } from 'react';
 import { Alert, FlatList, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+const shuffleArray = (array: Movie[]) => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
+const loadMoviesData = async (
+  setPopularMovies: (movies: Movie[]) => void,
+  setUpcomingMovies: (movies: Movie[]) => void,
+  setError: (error: string | null) => void,
+  setLoading: (loading: boolean) => void,
+  setRefreshing: (refreshing: boolean) => void
+) => {
+  try {
+    setError(null);
+    const [popular, upcoming] = await Promise.all([
+      tmdbApi.getPopularMovies(),
+      tmdbApi.getUpcomingMovies()
+    ]);
+    setPopularMovies(shuffleArray(popular));
+    setUpcomingMovies(upcoming);
+  } catch (error) {
+    const errorMessage = error instanceof APIError ? error.message : 'Failed to load movies';
+    setError(errorMessage);
+    if (error instanceof APIError && error.statusCode === 7) {
+      Alert.alert('Configuration Error', errorMessage);
+    }
+  } finally {
+    setLoading(false);
+    setRefreshing(false);
+  }
+};
+
+const initializeMovies = (
+  setPopularMovies: (movies: Movie[]) => void,
+  setUpcomingMovies: (movies: Movie[]) => void,
+  setError: (error: string | null) => void,
+  setLoading: (loading: boolean) => void,
+  setRefreshing: (refreshing: boolean) => void
+) => {
+  loadMoviesData(setPopularMovies, setUpcomingMovies, setError, setLoading, setRefreshing);
+};
+
 export default function MoviesScreen() {
   const [popularMovies, setPopularMovies] = useState<Movie[]>([]);
   const [upcomingMovies, setUpcomingMovies] = useState<Movie[]>([]);
@@ -14,38 +60,12 @@ export default function MoviesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const shuffleArray = (array: Movie[]) => {
-    const shuffled = [...array];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
-  };
-
-  const loadMovies = async () => {
-    try {
-      setError(null);
-      const [popular, upcoming] = await Promise.all([
-        tmdbApi.getPopularMovies(),
-        tmdbApi.getUpcomingMovies()
-      ]);
-      setPopularMovies(shuffleArray(popular));
-      setUpcomingMovies(upcoming);
-    } catch (error) {
-      const errorMessage = error instanceof APIError ? error.message : 'Failed to load movies';
-      setError(errorMessage);
-      if (error instanceof APIError && error.statusCode === 7) {
-        Alert.alert('Configuration Error', errorMessage);
-      }
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
+  const loadMovies = () => {
+    loadMoviesData(setPopularMovies, setUpcomingMovies, setError, setLoading, setRefreshing);
   };
 
   useEffect(() => {
-    loadMovies();
+    initializeMovies(setPopularMovies, setUpcomingMovies, setError, setLoading, setRefreshing);
   }, []);
 
   const onRefresh = () => {

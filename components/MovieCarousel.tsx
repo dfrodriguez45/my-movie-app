@@ -12,6 +12,56 @@ interface MovieCarouselProps {
 const { width } = Dimensions.get('window');
 
 /**
+ * Sets up auto-rotation interval with fade animation
+ */
+const setupAutoRotation = (
+  movies: Movie[],
+  fadeAnim: Animated.Value,
+  setCurrentIndex: (fn: (prev: number) => number) => void
+) => {
+  if (movies.length === 0) return;
+  
+  const interval = setInterval(() => {
+    // Fade out -> change content -> fade in sequence
+    Animated.sequence([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true, // Better performance
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    
+    // Change movie index during fade out
+    setTimeout(() => {
+      setCurrentIndex((prev) => (prev + 1) % movies.length);
+    }, 300);
+  }, 3000);
+
+  return interval;
+};
+
+/**
+ * Loads movie logo for current movie
+ */
+const loadMovieLogo = async (
+  movieId: number,
+  setLogoUrl: (url: string | null) => void
+) => {
+  try {
+    const images = await tmdbApi.getMovieImages(movieId);
+    const logo = images.logos?.find((logo: any) => logo.iso_639_1 === 'en') || images.logos?.[0];
+    setLogoUrl(logo ? tmdbApi.getImageUrl(logo.file_path) : null);
+  } catch (error) {
+    setLogoUrl(null);
+  }
+};
+
+/**
  * Animated Movie Carousel Component
  * Auto-rotates through movies with smooth fade transitions
  * Displays movie logos when available, falls back to titles
@@ -24,49 +74,20 @@ export default function MovieCarousel({ movies }: MovieCarouselProps) {
 
   /**
    * Auto-rotation effect with smooth fade animation
-   * Changes movie every 3 seconds with 300ms fade transition
+   */
+  useEffect(() => {
+    const interval = setupAutoRotation(movies, fadeAnim, setCurrentIndex);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [movies.length, fadeAnim]);
+
+  /**
+   * Load logo when current movie changes
    */
   useEffect(() => {
     if (movies.length === 0) return;
-    
-    const interval = setInterval(() => {
-      // Fade out -> change content -> fade in sequence
-      Animated.sequence([
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true, // Better performance
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
-      
-      // Change movie index during fade out
-      setTimeout(() => {
-        setCurrentIndex((prev) => (prev + 1) % movies.length);
-      }, 300);
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [movies.length, fadeAnim]);
-
-  useEffect(() => {
-    if (movies.length === 0) return;
-    
-    const loadLogo = async () => {
-      try {
-        const images = await tmdbApi.getMovieImages(movies[currentIndex].id);
-        const logo = images.logos?.find((logo: any) => logo.iso_639_1 === 'en') || images.logos?.[0];
-        setLogoUrl(logo ? tmdbApi.getImageUrl(logo.file_path) : null);
-      } catch (error) {
-        setLogoUrl(null);
-      }
-    };
-    
-    loadLogo();
+    loadMovieLogo(movies[currentIndex].id, setLogoUrl);
   }, [currentIndex, movies]);
 
   if (movies.length === 0) return null;
