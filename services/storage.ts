@@ -3,7 +3,7 @@ import { APIError } from '@/types/errors';
 import { MovieDetails } from '@/types/movie';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const SAVED_MOVIES_KEY = 'saved_movies';
+const SAVED_MOVIES_KEY = process.env.EXPO_PUBLIC_SAVED_MOVIES_KEY || 'saved_movies';
 
 export const storageService = {
   saveMovie: async (movie: MovieDetails): Promise<void> => {

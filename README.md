@@ -32,6 +32,9 @@ npx expo start
 2. Create/update `.env` file in the root directory:
 ```env
 EXPO_PUBLIC_API_KEY_TMDB=your_api_key_here
+EXPO_PUBLIC_BASE_URL=https://api.themoviedb.org/3
+EXPO_PUBLIC_IMAGE_BASE_URL=https://image.tmdb.org/t/p/w500
+EXPO_PUBLIC_SAVED_MOVIES_KEY=saved_movies
 ```
 3. The app will automatically use this environment variable
 
